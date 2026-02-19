@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사명의 길 무기고 신청 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #141420;
+    --bg-card: #1c1c30;
+    --accent-red: #e83a3a;
+    --accent-crimson: #c0392b;
+    --star6: #ff6b35;
+    --star5: #c9a227;
+    --star4: #8b9dc3;
+    --text-primary: #e8e8e8;
+    --text-dim: #7a8599;
+    --pickup-color: #ff4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(232,58,58,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 70%, rgba(192,57,43,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+
+  .header { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .header::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+  }
+  .banner-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-crimson), var(--accent-red));
+    color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 16px; border-radius: 2px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Rajdhani', sans-serif; font-size: 38px; font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(to right, #ff4444, #fff, #ff4444);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 14px; font-weight: 300; }
+  .pickup-info { margin-top: 12px; font-size: 13px; color: var(--accent-red); font-weight: 500; }
+
+  .stats-bar { display: flex; justify-content: center; gap: 24px; margin: 30px 0; flex-wrap: wrap; }
+  .stat-item { text-align: center; min-width: 80px; }
+  .stat-value { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; color: var(--accent-red); line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+  .pity-section { display: flex; justify-content: center; gap: 30px; margin: 20px 0; flex-wrap: wrap; }
+  .pity-item { text-align: center; }
+  .pity-bar-container { width: 120px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .pity-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .pity-bar-fill.bar-40 { background: linear-gradient(90deg, var(--star6), #ff9a56); }
+  .pity-bar-fill.bar-80 { background: linear-gradient(90deg, #e84393, #fd79a8); }
+  .pity-bar-fill.bar-5star { background: linear-gradient(90deg, var(--star5), #e8d44d); }
+  .pity-bar-fill.bar-milestone { background: linear-gradient(90deg, #6c5ce7, #a29bfe); }
+  .pity-count { font-family: 'Rajdhani', sans-serif; font-size: 24px; font-weight: 700; color: var(--star6); }
+  .pity-count.pink { color: #fd79a8; }
+  .pity-count.gold5 { color: var(--star5); }
+  .pity-count.purple { color: #a29bfe; }
+  .pity-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+
+  .btn-group { display: flex; justify-content: center; gap: 16px; margin: 30px 0; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 15px;
+    border: none; cursor: pointer; padding: 14px 36px;
+    transition: all 0.3s ease; letter-spacing: 1px;
+  }
+  .btn-pull {
+    background: linear-gradient(135deg, var(--accent-crimson), var(--accent-red)); color: #fff;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .btn-pull:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(232,58,58,0.4); }
+  .btn-pull:active { transform: translateY(0); }
+  .btn-reset {
+    background: transparent; color: var(--text-dim);
+    border: 1px solid rgba(136,153,170,0.3);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .btn-reset:hover { border-color: var(--text-dim); color: var(--text-primary); }
+
+  .log-msg { text-align: center; margin-top: 12px; font-size: 13px; color: var(--accent-red); min-height: 20px; }
+
+  .result-area { min-height: 200px; margin: 20px 0; }
+  .result-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .result-card {
+    width: 130px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden; opacity: 0; transform: scale(0.8) translateY(20px);
+    animation: cardReveal 0.5s ease forwards;
+  }
+  @keyframes cardReveal { to { opacity: 1; transform: scale(1) translateY(0); } }
+  .result-card.star6 { border-color: var(--star6); box-shadow: 0 0 20px rgba(255,107,53,0.3), inset 0 0 20px rgba(255,107,53,0.05); }
+  .result-card.star5 { border-color: var(--star5); box-shadow: 0 0 15px rgba(201,162,39,0.2); }
+  .result-card.star4 { border-color: rgba(139,157,195,0.3); }
+  .rarity-bar { height: 3px; width: 100%; }
+  .star6 .rarity-bar { background: linear-gradient(90deg, var(--star6), #ff9a56); }
+  .star5 .rarity-bar { background: linear-gradient(90deg, var(--star5), #e8d44d); }
+  .star4 .rarity-bar { background: linear-gradient(90deg, var(--star4), #a8b8d8); }
+  .card-body { padding: 14px 10px; text-align: center; }
+  .card-stars { font-size: 10px; letter-spacing: 2px; margin-bottom: 6px; }
+  .star6 .card-stars { color: var(--star6); }
+  .star5 .card-stars { color: var(--star5); }
+  .star4 .card-stars { color: var(--star4); }
+  .card-name { font-weight: 700; font-size: 13px; line-height: 1.3; }
+  .star6 .card-name { color: #fff; }
+  .star5 .card-name { color: #e8dbb8; }
+  .star4 .card-name { color: var(--star4); }
+  .card-rarity { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600; margin-top: 6px; letter-spacing: 1px; }
+  .pickup-badge { display: inline-block; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-top: 4px; letter-spacing: 1px; }
+  .guarantee-badge { display: inline-block; background: linear-gradient(135deg, #e84393, #fd79a8); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-top: 4px; letter-spacing: 1px; }
+  .milestone-badge { display: inline-block; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-top: 4px; letter-spacing: 1px; }
+  .weapon-icon { font-size: 10px; margin-right: 2px; }
+
+  .flash-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; pointer-events: none; opacity: 0; animation: flashIn 0.8s ease-out forwards; }
+  .flash-overlay.flash-6star { background: radial-gradient(circle, rgba(255,107,53,0.6), transparent); }
+  .flash-overlay.flash-pickup { background: radial-gradient(circle, rgba(255,68,68,0.7), transparent); }
+  @keyframes flashIn { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+  .history-panel { margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px; }
+  .history-title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 600; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 16px; text-align: center; }
+  .history-list { max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(232,58,58,0.3) transparent; }
+  .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; }
+  .history-item .pull-num { font-family: 'Rajdhani', sans-serif; font-weight: 600; color: var(--text-dim); width: 50px; }
+  .history-item .op-name { flex: 1; font-weight: 500; }
+  .history-item.h-star6 .op-name { color: var(--star6); font-weight: 700; }
+  .history-item.h-star5 .op-name { color: var(--star5); }
+  .history-item.h-star4 .op-name { color: var(--star4); }
+  .history-item .op-note { font-size: 11px; color: var(--text-dim); margin-left: 8px; min-width: 80px; text-align: right; }
+  .history-item .op-rarity { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 1px; margin-left: 8px; }
+
+  .prob-section { margin-top: 40px; padding: 20px; background: rgba(28,28,48,0.5); border: 1px solid rgba(255,255,255,0.05); }
+  .prob-section h3 { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; text-align: center; }
+  .prob-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; gap: 12px; }
+  .prob-row:last-child { border-bottom: none; }
+  .prob-rarity { font-weight: 700; white-space: nowrap; }
+  .prob-rarity.r6 { color: var(--star6); }
+  .prob-rarity.r5 { color: var(--star5); }
+  .prob-rarity.r4 { color: var(--star4); }
+  .prob-detail { flex: 1; color: var(--text-dim); }
+  .prob-value { font-family: 'Rajdhani', sans-serif; font-weight: 600; white-space: nowrap; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); font-size: 14px; font-weight: 300; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 26px; }
+    .result-card { width: 100px; }
+    .card-name { font-size: 11px; }
+    .btn { padding: 12px 24px; font-size: 13px; }
+    .stats-bar { gap: 12px; }
+    .stat-value { font-size: 24px; }
+    .pity-section { gap: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="banner-tag">WEAPON REQUISITION</div>
+    <h1>사명의 길 픽업</h1>
+    <p>무기고 신청 시뮬레이터 · 순행 신청</p>
+    <div class="pickup-info">6★ 4% · 픽업 25% · 반천장 4회(40뽑) · 확정 8회(80뽑) · 10연만 가능</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-value" id="totalPulls">0</div><div class="stat-label">총 뽑기</div></div>
+    <div class="stat-item"><div class="stat-value" id="totalReqs">0</div><div class="stat-label">신청 횟수</div></div>
+    <div class="stat-item"><div class="stat-value" id="star6Count">0</div><div class="stat-label">★6 획득</div></div>
+    <div class="stat-item"><div class="stat-value" id="pickupCount">0</div><div class="stat-label">사명의 길</div></div>
+  </div>
+
+  <div class="pity-section">
+    <div class="pity-item">
+      <div class="pity-count" id="pity40">0</div>
+      <div class="pity-label">6★ 천장 (4회)</div>
+      <div class="pity-bar-container"><div class="pity-bar-fill bar-40" id="pityBar40" style="width:0%"></div></div>
+    </div>
+    <div class="pity-item">
+      <div class="pity-count pink" id="pity80">0</div>
+      <div class="pity-label">픽업 확정 (8회)</div>
+      <div class="pity-bar-container"><div class="pity-bar-fill bar-80" id="pityBar80" style="width:0%"></div></div>
+    </div>
+    <div class="pity-item">
+      <div class="pity-count purple" id="milestoneDisplay">0</div>
+      <div class="pity-label">누적 보상</div>
+      <div class="pity-bar-container"><div class="pity-bar-fill bar-milestone" id="pityBarMilestone" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-pull" onclick="doRequisition()">무기고 신청 (10연)</button>
+    <button class="btn btn-reset" onclick="resetAll()">초기화</button>
+  </div>
+
+  <div class="log-msg" id="logMsg"></div>
+
+  <div class="result-area" id="resultArea">
+    <div class="empty-state">
+      <div class="icon">⚔</div>
+      <div>무기고 신청 버튼을 눌러 시작하세요</div>
+    </div>
+  </div>
+
+  <div class="history-panel">
+    <div class="history-title">History</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="prob-section">
+    <h3>확률 정보 (게임 내 공식 데이터 기반)</h3>
+    <div class="prob-row">
+      <span class="prob-rarity r6">★6</span>
+      <span class="prob-detail">사명의 길(25%) / 기사도 정신 / 망각 / 쾌기 / 테르밋 커터 / 백야의 별 / 모범 (각 12.5%)</span>
+      <span class="prob-value">4.00%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-rarity r5">★5</span>
+      <span class="prob-detail">강철의 여운 / 불사의 성주 / 린수를 찾아서 3.0 / 심이문 / O.B.J. 엣지 오브 라이트 / 숭배의 시선 외 다수</span>
+      <span class="prob-value">15.00%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-rarity r4">★4</span>
+      <span class="prob-detail">긴급 대책 / 거대한 격량 / 공업 0.1 / 불꽃의 시험 / 오토 하이퍼노바 / 섬광 번개 외</span>
+      <span class="prob-value">81.00%</span>
+    </div>
+    <div class="prob-row" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;">
+      <span class="prob-rarity r6" style="font-size:12px;">반천장</span>
+      <span class="prob-detail">3회 연속 6성 없으면 4회째 확정 (이월 안 됨)</span>
+      <span class="prob-value">40뽑</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-rarity" style="font-size:12px;color:#fd79a8;">확정픽업</span>
+      <span class="prob-detail">7회 연속 픽업 없으면 8회째 확정 (1회 한정, 이월 안 됨)</span>
+      <span class="prob-value">80뽑</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-rarity" style="font-size:12px;color:#a29bfe;">누적 보상</span>
+      <span class="prob-detail">10회→상자 / 18회→픽업무기 / 26회→상자 / 34회→픽업무기 ... (8회 간격 교대)</span>
+      <span class="prob-value">10회~</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-rarity r5" style="font-size:12px;">5★ 확정</span>
+      <span class="prob-detail">10개 중 5성 이상 무기 반드시 포함</span>
+      <span class="prob-value">10뽑</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const PICKUP_WEAPON = '사명의 길';
+const star6Pool = [
+  { name: '사명의 길', rate: 0.25, isPickup: true },
+  { name: '기사도 정신', rate: 0.125 },
+  { name: '망각', rate: 0.125 },
+  { name: '쾌기', rate: 0.125 },
+  { name: '테르밋 커터', rate: 0.125 },
+  { name: '백야의 별', rate: 0.125 },
+  { name: '모범', rate: 0.125 }
+];
+const star5Pool = [
+  '강철의 여운','불사의 성주','린수를 찾아서 3.0','심이문','O.B.J. 엣지 오브 라이트','숭배의 시선',
+  '검은 추적자','고대의 강줄기','최후의 메아리','O.B.J. 헤비 버든',
+  '망자의 노래','무가내하','황무지의 방랑자','선교의 자유','O.B.J. 아츠 아이덴티티',
+  '키메라의 정의','O.B.J. 스파이크','중심력',
+  '작품: 중생','O.B.J. 벨로시투스','이성적인 작별'
+];
+const star4Pool = [
+  '긴급 대책','거대한 격량','공업 0.1','불꽃의 시험',
+  '오토 하이퍼노바','섬광 번개','개척자의 이정표','아겔로스 사냥꾼',
+  '하울링 가드','끝없는 여정'
+];
+const selectableWeapons = ['테르밋 커터','백야의 별','모범','기사도 정신','망각','쾌기'];
+
+const BASE_6STAR = 0.04;
+const BASE_5STAR = 0.15;
+// No soft pity for weapons
+const HARD_PITY_REQS = 4;    // 4 requisitions (40 pulls) for 6star
+const PICKUP_PITY_REQS = 8;  // 8 requisitions (80 pulls) for pickup
+
+let totalPulls = 0, totalReqs = 0, star6Total = 0, star5Total = 0, pickupTotal = 0;
+let pity40_reqs = 0;  // reqs without 6star (resets on 6star, max 3 then 4th forced)
+let pity80_reqs = 0;  // reqs without pickup 6star (resets on pickup, max 7 then 8th forced)
+let pickupGuaranteeUsed = false; // 80 pity is one-time only
+let milestoneReqs = 0; // total reqs for milestone rewards
+let history = [];
+
+// Milestone tracking
+function getNextMilestone(reqs) {
+  if (reqs < 10) return { target: 10, type: 'box', label: '보충 무기고 상자' };
+  if (reqs < 18) return { target: 18, type: 'pickup', label: '사명의 길' };
+  // After 18: every 8, alternating box(26,42,...) and pickup(34,50,...)
+  const after18 = reqs - 18;
+  const cycle = Math.floor(after18 / 8);
+  const next18plus = (cycle + 1) * 8 + 18;
+  if (cycle % 2 === 0) return { target: next18plus, type: 'box', label: '보충 무기고 상자' };
+  return { target: next18plus, type: 'pickup', label: '사명의 길' };
+}
+
+function checkMilestone(reqs) {
+  // Check if current reqs hits a milestone
+  if (reqs === 10) return { type: 'box', label: '보충 무기고 상자 획득!' };
+  if (reqs === 18) return { type: 'pickup', label: '사명의 길 확정 지급!' };
+  if (reqs > 18) {
+    const after18 = reqs - 18;
+    if (after18 % 8 === 0) {
+      const cycle = (after18 / 8) - 1;
+      if (cycle % 2 === 0) return { type: 'box', label: '보충 무기고 상자 획득!' };
+      return { type: 'pickup', label: '사명의 길 확정 지급!' };
+    }
+  }
+  return null;
+}
+
+function pick6Star(isForcePickup) {
+  if (isForcePickup) {
+    return { name: PICKUP_WEAPON, isPickup: true };
+  }
+  const roll = Math.random();
+  let cumulative = 0;
+  for (const w of star6Pool) {
+    cumulative += w.rate;
+    if (roll < cumulative) {
+      return { name: w.name, isPickup: w.isPickup || false };
+    }
+  }
+  return { name: star6Pool[star6Pool.length - 1].name, isPickup: false };
+}
+
+function doSinglePull(forceRarity, forcePickup) {
+  // forceRarity: 6 = force 6star, 5 = force 5star+
+  // forcePickup: true = force pickup weapon
+
+  if (forceRarity === 6 || forcePickup) {
+    const weapon = pick6Star(forcePickup);
+    return { rarity: 6, name: weapon.name, isPickup: weapon.isPickup, note: '' };
+  }
+
+  const roll = Math.random();
+
+  if (roll < BASE_6STAR) {
+    const weapon = pick6Star(false);
+    return { rarity: 6, name: weapon.name, isPickup: weapon.isPickup, note: '' };
+  } else if (roll < BASE_6STAR + BASE_5STAR || forceRarity === 5) {
+    const name = star5Pool[Math.floor(Math.random() * star5Pool.length)];
+    return { rarity: 5, name, isPickup: false, note: forceRarity === 5 && roll >= BASE_6STAR + BASE_5STAR ? '5★확정' : '' };
+  } else {
+    const name = star4Pool[Math.floor(Math.random() * star4Pool.length)];
+    return { rarity: 4, name, isPickup: false, note: '' };
+  }
+}
+
+function doRequisition() {
+  const results = [];
+  let has6 = false, hasPickup = false;
+  let got5plus = false;
+  let msgs = [];
+
+  totalReqs++;
+  milestoneReqs++;
+  pity40_reqs++;
+  pity80_reqs++;
+
+  // Determine if this req forces 6star (pity40) or pickup (pity80)
+  const force6star = pity40_reqs >= HARD_PITY_REQS;
+  const forcePickup = !pickupGuaranteeUsed && pity80_reqs >= PICKUP_PITY_REQS;
+
+  for (let i = 0; i < 10; i++) {
+    totalPulls++;
+
+    let result;
+    const isLast = i === 9;
+
+    // On the last pull of a forced requisition
+    if (isLast && (force6star || forcePickup) && !has6) {
+      if (forcePickup) {
+        result = doSinglePull(6, true);
+        result.note = '80뽑 픽업확정';
+      } else {
+        result = doSinglePull(6, false);
+        result.note = '40뽑 6★확정';
+      }
+    } else if (isLast && !got5plus) {
+      // 5star guarantee in 10 pulls
+      result = doSinglePull(5, false);
+    } else {
+      result = doSinglePull(null, false);
+    }
+
+    if (result.rarity >= 5) got5plus = true;
+
+    if (result.rarity === 6) {
+      has6 = true;
+      star6Total++;
+      pity40_reqs = 0;
+
+      if (result.isPickup) {
+        hasPickup = true;
+        pickupTotal++;
+        pity80_reqs = 0;
+        // Once pickup is obtained via guarantee, mark it used
+        if (forcePickup && !pickupGuaranteeUsed) {
+          pickupGuaranteeUsed = true;
+        }
+      }
+    }
+
+    if (result.rarity === 5) star5Total++;
+
+    results.push(result);
+    history.unshift({ pull: totalPulls, ...result });
+  }
+
+  // Check milestone
+  const milestone = checkMilestone(milestoneReqs);
+  if (milestone) {
+    if (milestone.type === 'pickup') {
+      pickupTotal++;
+      msgs.push('🎁 ' + milestone.label);
+    } else {
+      msgs.push('📦 ' + milestone.label);
+    }
+  }
+
+  // Flash
+  if (has6) {
+    const flash = document.createElement('div');
+    flash.className = `flash-overlay ${hasPickup ? 'flash-pickup' : 'flash-6star'}`;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 800);
+  }
+
+  // Collect messages from results
+  results.filter(r => r.note).forEach(r => {
+    msgs.push(`${r.name}: ${r.note}`);
+  });
+
+  document.getElementById('logMsg').textContent = msgs.join(' | ');
+
+  renderResults(results, milestone);
+  updateStats();
+  renderHistory();
+}
+
+function renderResults(results, milestone) {
+  const area = document.getElementById('resultArea');
+  const grid = document.createElement('div');
+  grid.className = 'result-grid';
+
+  results.forEach((r, i) => {
+    const cls = r.rarity === 6 ? 'star6' : r.rarity === 5 ? 'star5' : 'star4';
+    const card = document.createElement('div');
+    card.className = `result-card ${cls}`;
+    card.style.animationDelay = `${i * 0.06}s`;
+    card.innerHTML = `
+      <div class="rarity-bar"></div>
+      <div class="card-body">
+        <div class="card-stars">${'★'.repeat(r.rarity)}</div>
+        <div class="card-name">${r.name}</div>
+        <div class="card-rarity">${r.rarity}★ 무기</div>
+        ${r.isPickup ? '<div class="pickup-badge">PICK UP</div>' : ''}
+        ${r.note && r.note.includes('확정') ? '<div class="guarantee-badge">' + r.note + '</div>' : ''}
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // Milestone bonus card
+  if (milestone) {
+    const card = document.createElement('div');
+    const isMilestonePickup = milestone.type === 'pickup';
+    card.className = `result-card ${isMilestonePickup ? 'star6' : 'star6'}`;
+    card.style.animationDelay = '0.7s';
+    card.innerHTML = `
+      <div class="rarity-bar" style="background:linear-gradient(90deg,#6c5ce7,#a29bfe)"></div>
+      <div class="card-body">
+        <div class="card-stars" style="color:#a29bfe">★★★★★★</div>
+        <div class="card-name" style="color:#fff">${milestone.label.replace(' 획득!','').replace(' 확정 지급!','')}</div>
+        <div class="card-rarity">누적 보상</div>
+        <div class="milestone-badge">MILESTONE ${milestoneReqs}회</div>
+      </div>`;
+    grid.appendChild(card);
+  }
+
+  area.innerHTML = '';
+  area.appendChild(grid);
+}
+
+function updateStats() {
+  document.getElementById('totalPulls').textContent = totalPulls;
+  document.getElementById('totalReqs').textContent = totalReqs;
+  document.getElementById('star6Count').textContent = star6Total;
+  document.getElementById('pickupCount').textContent = pickupTotal;
+  document.getElementById('pity40').textContent = pity40_reqs;
+  const pity80Text = pickupGuaranteeUsed ? '완료' : pity80_reqs;
+  document.getElementById('pity80').textContent = pity80Text;
+  document.getElementById('pityBar40').style.width = (pity40_reqs / HARD_PITY_REQS * 100) + '%';
+  document.getElementById('pityBar80').style.width = pickupGuaranteeUsed ? '100%' : (pity80_reqs / PICKUP_PITY_REQS * 100) + '%';
+
+  const next = getNextMilestone(milestoneReqs);
+  document.getElementById('milestoneDisplay').textContent = milestoneReqs + '/' + next.target;
+  document.getElementById('pityBarMilestone').style.width = (milestoneReqs / next.target * 100) + '%';
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  history.slice(0, 100).forEach(h => {
+    const cls = h.rarity === 6 ? 'h-star6' : h.rarity === 5 ? 'h-star5' : 'h-star4';
+    const item = document.createElement('div');
+    item.className = `history-item ${cls}`;
+    item.innerHTML = `
+      <span class="pull-num">#${h.pull}</span>
+      <span class="op-name">${h.name}${h.isPickup ? ' ✦' : ''}</span>
+      <span class="op-note">${h.note || ''}</span>
+      <span class="op-rarity">${h.rarity}★</span>`;
+    list.appendChild(item);
+  });
+}
+
+function resetAll() {
+  totalPulls = 0; totalReqs = 0; star6Total = 0; star5Total = 0; pickupTotal = 0;
+  pity40_reqs = 0; pity80_reqs = 0;
+  pickupGuaranteeUsed = false;
+  milestoneReqs = 0;
+  history = [];
+  updateStats();
+  document.getElementById('logMsg').textContent = '';
+  document.getElementById('resultArea').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">⚔</div>
+      <div>무기고 신청 버튼을 눌러 시작하세요</div>
+    </div>`;
+  document.getElementById('historyList').innerHTML = '';
+}
+</script>
+</body>
+</html>
